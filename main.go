@@ -2,6 +2,7 @@ package main
 
 import (
 	"math/rand"
+	"time"
 
 	"github.com/faiface/pixel"
 	"github.com/faiface/pixel/imdraw"
@@ -10,21 +11,24 @@ import (
 )
 
 const (
-	cells          = 40
-	cellWidth      = 20
+	cells          = 250
+	cellWidth      = 4
 	windowSize     = float64(cells * cellWidth)
 	initalCellsPct = 0.3
 )
 
 type gameOfLife struct {
 	currentState [][]bool
+	nextState    [][]bool
 	size         int
 }
 
 func (g *gameOfLife) initialize() {
 	g.currentState = make([][]bool, cells)
+	g.nextState = make([][]bool, cells)
 	for i := range g.currentState {
 		g.currentState[i] = make([]bool, cells)
+		g.nextState[i] = make([]bool, cells)
 	}
 
 	for i := 0; i < cells; i++ {
@@ -56,6 +60,49 @@ func (g *gameOfLife) draw(imd *imdraw.IMDraw) {
 	}
 }
 
+func (g *gameOfLife) checkNeighbors(x, y int) int {
+	n := 0
+	for i := x - 1; i <= x+1; i++ {
+		for j := y - 1; j <= y+1; j++ {
+			posX, posY := i, j
+			// fmt.Println(posX, posY)
+			if posX == x && posY == y {
+				continue
+			}
+			if posX < 0 || posX >= cells {
+				continue
+			}
+			if posY < 0 || posY >= cells {
+				continue
+			}
+			if g.currentState[posX][posY] {
+				n++
+			}
+		}
+	}
+
+	return n
+}
+
+func (g *gameOfLife) calculateNextState() {
+	for i, row := range g.currentState {
+		for j, v := range row {
+			n := g.checkNeighbors(i, j)
+			g.nextState[i][j] = false
+			if v {
+				if n == 2 || n == 3 {
+					g.nextState[i][j] = true
+				}
+			} else {
+				if n == 3 {
+					g.nextState[i][j] = true
+				}
+			}
+		}
+	}
+	g.currentState, g.nextState = g.nextState, g.currentState
+}
+
 func run() {
 	cfg := pixelgl.WindowConfig{
 		Title:  "Game Of Life",
@@ -69,7 +116,6 @@ func run() {
 	}
 
 	game := gameOfLife{}
-	// game.currentState = make([][]bool, cells)
 	game.initialize()
 
 	imd := *imdraw.New(nil)
@@ -78,7 +124,9 @@ func run() {
 		win.Clear(colornames.White)
 		game.draw(&imd)
 		imd.Draw(win)
+		game.calculateNextState()
 		win.Update()
+		time.Sleep(40 * time.Millisecond)
 	}
 }
 
