@@ -22,6 +22,7 @@ const (
 	initalCellsPct = 0.3
 	menuWidth      = 400
 	fps            = 30
+	disableEdges   = true
 )
 
 var (
@@ -77,16 +78,26 @@ func (g *gameOfLife) checkNeighbors(x, y int) int {
 		for j := y - 1; j <= y+1; j++ {
 			posX, posY := i, j
 
-			if posX == -1 {
-				posX = cells - 1
-			} else if posX == cells {
-				posX = 0
-			}
+			if disableEdges {
+				if posX < 0 || posX >= cells {
+					continue
+				}
+				if posY < 0 || posY >= cells {
+					continue
+				}
+			} else {
 
-			if posY == -1 {
-				posY = cells - 1
-			} else if posY == cells {
-				posY = 0
+				if posX == -1 {
+					posX = cells - 1
+				} else if posX == cells {
+					posX = 0
+				}
+
+				if posY == -1 {
+					posY = cells - 1
+				} else if posY == cells {
+					posY = 0
+				}
 			}
 
 			if posX == x && posY == y {
