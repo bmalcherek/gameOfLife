@@ -159,7 +159,11 @@ func handlePause(w *pixelgl.Window) {
 func highlightSquare(w *pixelgl.Window, g *gameOfLife, i *imdraw.IMDraw) {
 	x, y := int(math.Floor(w.MousePosition().X/cellWidth)), int(math.Floor(w.MousePosition().Y/cellWidth))
 	if x < cells && y < cells {
-		i.Color = colornames.Violet
+		if !g.currentState[x][y] {
+			i.Color = colornames.Green
+		} else {
+			i.Color = colornames.Red
+		}
 		posX, posY := float64(x*cellWidth), float64(y*cellWidth)
 		i.Push(pixel.V(posX, posY))
 		i.Push(pixel.V(posX+cellWidth, posY+cellWidth))
@@ -170,7 +174,8 @@ func highlightSquare(w *pixelgl.Window, g *gameOfLife, i *imdraw.IMDraw) {
 func handleMouseClick(w *pixelgl.Window, g *gameOfLife, i *imdraw.IMDraw) {
 	if w.JustPressed(pixelgl.MouseButtonLeft) {
 		x, y := int(math.Floor(w.MousePosition().X/cellWidth)), int(math.Floor(w.MousePosition().Y/cellWidth))
-		g.currentState[x][y] = true
+		w.MousePosition()
+		g.currentState[x][y] = !g.currentState[x][y]
 		g.draw(i)
 	}
 }
