@@ -3,6 +3,7 @@ package main
 import (
 	"fmt"
 	"image/color"
+	"math"
 	"math/rand"
 	"time"
 
@@ -15,12 +16,12 @@ import (
 )
 
 const (
-	cells          = 200
-	cellWidth      = 5
+	cells          = 100
+	cellWidth      = 10
 	gameSize       = float64(cells * cellWidth)
 	initalCellsPct = 0.3
 	menuWidth      = 400
-	fps            = 15
+	fps            = 30
 )
 
 var (
@@ -155,11 +156,29 @@ func handlePause(w *pixelgl.Window) {
 	}
 }
 
+func highlightSquare(w *pixelgl.Window, g *gameOfLife, i *imdraw.IMDraw) {
+	x, y := int(math.Floor(w.MousePosition().X/cellWidth)), int(math.Floor(w.MousePosition().Y/cellWidth))
+	if x < cells && y < cells {
+		i.Color = colornames.Violet
+		posX, posY := float64(x*cellWidth), float64(y*cellWidth)
+		i.Push(pixel.V(posX, posY))
+		i.Push(pixel.V(posX+cellWidth, posY+cellWidth))
+		i.Rectangle(0)
+	}
+}
+
+func handleMouseClick(w *pixelgl.Window, g *gameOfLife, i *imdraw.IMDraw) {
+	if w.JustPressed(pixelgl.MouseButtonLeft) {
+		x, y := int(math.Floor(w.MousePosition().X/cellWidth)), int(math.Floor(w.MousePosition().Y/cellWidth))
+		g.currentState[x][y] = true
+		g.draw(i)
+	}
+}
+
 func run() {
 	cfg := pixelgl.WindowConfig{
 		Title:  "Game Of Life",
 		Bounds: pixel.R(0, 0, gameSize+menuWidth, gameSize),
-		// VSync:  true,
 	}
 
 	win, err := pixelgl.NewWindow(cfg)
@@ -176,12 +195,15 @@ func run() {
 
 	for !win.Closed() {
 		handlePause(win)
+		win.Clear(colornames.White)
+		game.draw(&imd)
+		imd.Draw(win)
 
 		if !paused {
-			win.Clear(colornames.White)
-			game.draw(&imd)
-			imd.Draw(win)
 			game.calculateNextState()
+		} else {
+			highlightSquare(win, &game, &imd)
+			handleMouseClick(win, &game, &imd)
 		}
 		drawMenu(&imd, win)
 
