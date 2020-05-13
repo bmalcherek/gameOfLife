@@ -11,8 +11,8 @@ import (
 )
 
 const (
-	cells          = 250
-	cellWidth      = 4
+	cells          = 200
+	cellWidth      = 5
 	windowSize     = float64(cells * cellWidth)
 	initalCellsPct = 0.3
 )
@@ -65,16 +65,23 @@ func (g *gameOfLife) checkNeighbors(x, y int) int {
 	for i := x - 1; i <= x+1; i++ {
 		for j := y - 1; j <= y+1; j++ {
 			posX, posY := i, j
-			// fmt.Println(posX, posY)
+
+			if posX == -1 {
+				posX = cells - 1
+			} else if posX == cells {
+				posX = 0
+			}
+
+			if posY == -1 {
+				posY = cells - 1
+			} else if posY == cells {
+				posY = 0
+			}
+
 			if posX == x && posY == y {
 				continue
 			}
-			if posX < 0 || posX >= cells {
-				continue
-			}
-			if posY < 0 || posY >= cells {
-				continue
-			}
+
 			if g.currentState[posX][posY] {
 				n++
 			}
