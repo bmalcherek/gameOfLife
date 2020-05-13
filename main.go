@@ -1,20 +1,30 @@
 package main
 
 import (
+	"fmt"
+	"image/color"
 	"math/rand"
 	"time"
 
 	"github.com/faiface/pixel"
 	"github.com/faiface/pixel/imdraw"
 	"github.com/faiface/pixel/pixelgl"
+	"github.com/faiface/pixel/text"
 	"golang.org/x/image/colornames"
+	"golang.org/x/image/font/basicfont"
 )
 
 const (
 	cells          = 200
 	cellWidth      = 5
-	windowSize     = float64(cells * cellWidth)
+	gameSize       = float64(cells * cellWidth)
 	initalCellsPct = 0.3
+	menuWidth      = 400
+	fps            = 15
+)
+
+var (
+	paused = false
 )
 
 type gameOfLife struct {
@@ -110,11 +120,46 @@ func (g *gameOfLife) calculateNextState() {
 	g.currentState, g.nextState = g.nextState, g.currentState
 }
 
+func drawMenu(imd *imdraw.IMDraw, w *pixelgl.Window) {
+
+	imd.Color = color.RGBA{0xb2, 0xeb, 0xf2, 0xff}
+	imd.Push(pixel.V(float64(gameSize), float64(0)))
+	imd.Push(pixel.V(float64(gameSize+400), float64(gameSize)))
+	imd.Rectangle(0)
+
+	imd.Draw(w)
+
+	atlas := text.NewAtlas(basicfont.Face7x13, text.ASCII)
+	pauseText := text.New(pixel.V(1050, 900), atlas)
+	pauseText.Color = colornames.Black
+	pauseText.LineHeight = atlas.LineHeight() * 1.5
+
+	var text string
+	if paused {
+		text = "Press P to resume"
+	} else {
+		text = "Press P to pause"
+	}
+
+	textScale := float64(2.3)
+	pauseText.Orig.X = gameSize + menuWidth/2 - pauseText.BoundsOf(text).W()/2*textScale
+	pauseText.Dot.X = gameSize + menuWidth/2 - pauseText.BoundsOf(text).W()/2*textScale
+	fmt.Fprintln(pauseText, text)
+
+	pauseText.Draw(w, pixel.IM.Scaled(pauseText.Orig, textScale))
+}
+
+func handlePause(w *pixelgl.Window) {
+	if w.JustPressed(pixelgl.KeyP) {
+		paused = !paused
+	}
+}
+
 func run() {
 	cfg := pixelgl.WindowConfig{
 		Title:  "Game Of Life",
-		Bounds: pixel.R(0, 0, windowSize, windowSize),
-		VSync:  true,
+		Bounds: pixel.R(0, 0, gameSize+menuWidth, gameSize),
+		// VSync:  true,
 	}
 
 	win, err := pixelgl.NewWindow(cfg)
@@ -127,13 +172,22 @@ func run() {
 
 	imd := *imdraw.New(nil)
 
+	f := time.Tick(time.Second / fps)
+
 	for !win.Closed() {
-		win.Clear(colornames.White)
-		game.draw(&imd)
-		imd.Draw(win)
-		game.calculateNextState()
+		handlePause(win)
+
+		if !paused {
+			win.Clear(colornames.White)
+			game.draw(&imd)
+			imd.Draw(win)
+			game.calculateNextState()
+		}
+		drawMenu(&imd, win)
+
 		win.Update()
-		time.Sleep(40 * time.Millisecond)
+
+		<-f
 	}
 }
 
